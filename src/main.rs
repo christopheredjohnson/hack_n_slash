@@ -1,120 +1,64 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-struct Player {
-    speed: f32,
+pub struct Player {
+    speed: f32
 }
 
-#[derive(Component)]
-struct Weapon {
-    shape: Shape,
+fn spawn_camera(mut commands: Commands) {
+    let mut camera = Camera2dBundle::default();
+    commands.spawn(camera);
 }
 
-#[derive(Component)]
-enum Shape {
-    Stick,
-}
-
-#[derive(Component)]
-struct SwipeAttack {
-    duration: Timer,
-    direction: Vec3,
-}
-
-fn setup(
-    asset_server: Res<AssetServer>,
-    mut commands: Commands
-) {
-    commands.spawn(Camera2dBundle::default());
-
-    // you can also use `with_children`:
-    commands
-        .spawn((
-            Player { speed: 2.00 },
-            SpriteBundle {
-                texture: asset_server.load("icon.png"),
-                transform: Transform::from_xyz(0.0, 0.0, 0.0),
-                sprite: Sprite {
-                    custom_size: Some(Vec2::new(50.00, 50.00)),
-                    ..default()
-                },
-                ..default()
+fn spawn_player(mut commands: Commands) {
+    commands.spawn((
+        SpriteBundle {
+            sprite: Sprite {
+                custom_size: Some(Vec2::splat(50.0)),
+                ..Default::default()
             },
-        ));
-        // .with_children(|parent| {
-        //     parent.spawn((
-        //         Weapon {
-        //             shape: Shape::Stick,
-        //         },
-        //         SpriteBundle {
-        //             transform: Transform::from_xyz(10.0, 0.0, 1.0),
-        //             sprite: Sprite {
-        //                 color: Color::BLACK,
-        //                 custom_size: Some(Vec2::new(5.00, 100.00)),
-        //                 ..default()
-        //             },
-        //             ..default()
-        //         },
-        //     ));
-        // });
+            ..Default::default()
+        },
+        Player {
+            speed: 2.0
+        },
+    ));
 }
 
 fn player_movement(
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut transform_query: Query<(&mut Transform, &Player), With<Player>>,
+  time: Res<Time>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut player_query: Query<(&Player, &mut Transform), With<Player>>,
 ) {
-    let (mut player_transform, player) = transform_query.single_mut();
+    let (player, mut player_transform) = player_query.single_mut();
 
-    let mut direction: Vec3 = Vec3::ZERO;
+    let player_speed = player.speed * 100.0;
 
-    if keyboard_input.pressed(KeyCode::KeyW) {
-        direction.y += 1.0;
+
+    if keyboard.pressed(KeyCode::KeyW) {
+            player_transform.translation.y +=  player_speed * time.delta_seconds();
     }
 
-    if keyboard_input.pressed(KeyCode::KeyS) {
-        direction.y -= 1.0;
+    if keyboard.pressed(KeyCode::KeyS) {
+            player_transform.translation.y -=  player_speed * time.delta_seconds();
     }
 
-    if keyboard_input.pressed(KeyCode::KeyA) {
-        direction.x -= 1.0;
+    if keyboard.pressed(KeyCode::KeyA) {
+            player_transform.translation.x -=  player_speed * time.delta_seconds();
     }
 
-    if keyboard_input.pressed(KeyCode::KeyD) {
-        direction.x += 1.0;
+    if keyboard.pressed(KeyCode::KeyD) {
+            player_transform.translation.x +=  player_speed * time.delta_seconds();
     }
 
-    if direction.length() > 0.0 {
-        direction = direction.normalize();
-    }
-
-    if keyboard_input.pressed(KeyCode::ArrowRight) {
-        player_transform.rotate_z(0.1);
-    }
-    if keyboard_input.pressed(KeyCode::ArrowLeft) {
-        player_transform.rotate_z(-0.1);
-    }
-
-    player_transform.translation += direction * player.speed;
-}
-
-fn player_attack(
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut commands: Commands,
-    mut player_query: Query<(&Transform, &Children), With<Player>>,
-) {
-
-
-    let (mut transform, children) = player_query.single_mut();
-    
-    // if keyboard_input.just_pressed(KeyCode::Space) {
-    //     info!("Attack!")
-    // }
+    info!("{:?}", player_transform.translation);
 }
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_systems(Startup, setup)
-        .add_systems(Update, (player_movement, player_attack).chain())
+        .insert_resource(ClearColor(Color::rgb(0.3, 0.5, 0.3)))
+        .add_systems(Startup, (spawn_camera, spawn_player))
+        .add_systems(Update, player_movement)
         .run();
 }
