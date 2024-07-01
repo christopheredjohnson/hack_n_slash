@@ -1,19 +1,16 @@
 use bevy::prelude::*;
 use bevy_inspector_egui::InspectorOptions;
 
-#[derive(Component)]
-pub struct AnimationIndices {
-    pub first: usize,
-    pub last: usize,
-}
 
-#[derive(Component, Deref, DerefMut)]
-pub struct AnimationTimer(pub Timer);
+
+
+#[derive(Component)]
+pub struct  MainCamera;
 
 #[derive(Resource)]
 pub struct LastMoveTime(pub f32);
 
-#[derive(Resource, InspectorOptions)]
+#[derive(Resource, InspectorOptions, Copy, Clone)]
 pub struct Grid {
     pub size: Vec2,
     pub cell_size: Vec2,
@@ -34,7 +31,6 @@ impl Grid {
         )
     }
 }
-
 
 #[derive(Component, InspectorOptions)]
 pub struct Player;
