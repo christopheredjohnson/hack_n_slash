@@ -1,42 +1,8 @@
 use bevy::prelude::*;
-use bevy_inspector_egui::{egui::Shape, quick::WorldInspectorPlugin, InspectorOptions};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use components::{AnimationIndices, AnimationTimer, Grid, LastMoveTime, Player};
 
-#[derive(Component)]
-struct AnimationIndices {
-    first: usize,
-    last: usize,
-}
-
-#[derive(Component, Deref, DerefMut)]
-struct AnimationTimer(Timer);
-
-#[derive(Resource)]
-pub struct LastMoveTime(f32);
-
-#[derive(Resource, InspectorOptions)]
-pub struct Grid {
-    size: Vec2,
-    cell_size: Vec2,
-}
-
-impl Grid {
-    fn world_to_grid(&self, world_pos: Vec2) -> IVec2 {
-        IVec2::new(
-            (world_pos.x / self.cell_size.x).floor() as i32,
-            (world_pos.y / self.cell_size.y).floor() as i32,
-        )
-    }
-
-    fn grid_to_world(&self, grid_pos: IVec2) -> Vec2 {
-        Vec2::new(
-            grid_pos.x as f32 * self.cell_size.x + self.cell_size.x / 2.0,
-            grid_pos.y as f32 * self.cell_size.y + self.cell_size.y / 2.0,
-        )
-    }
-}
-
-#[derive(Component, InspectorOptions)]
-pub struct Player;
+mod components;
 
 fn setup(
     mut commands: Commands,
@@ -55,7 +21,7 @@ fn setup(
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
 
     // Use only the subset of sprites in the sheet that make up the run animation
-    let animation_indices = AnimationIndices { first: 1, last: 6 };
+    let animation_indices = AnimationIndices { first: 1, last: 4 };
 
     commands.spawn((
         SpriteSheetBundle {
@@ -126,6 +92,7 @@ fn player_input(
         }
     }
 }
+
 fn snap_to_grid(grid: Res<Grid>, mut query: Query<(&mut Transform, &Player)>) {
     for (mut transform, _player) in query.iter_mut() {
         let grid_pos = grid.world_to_grid(transform.translation.truncate());
