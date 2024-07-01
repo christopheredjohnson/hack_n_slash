@@ -2,11 +2,11 @@ use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct Player {
-    speed: f32
+    speed: f32,
 }
 
 fn spawn_camera(mut commands: Commands) {
-    let mut camera = Camera2dBundle::default();
+    let camera = Camera2dBundle::default();
     commands.spawn(camera);
 }
 
@@ -19,14 +19,12 @@ fn spawn_player(mut commands: Commands) {
             },
             ..Default::default()
         },
-        Player {
-            speed: 2.0
-        },
+        Player { speed: 2.0 },
     ));
 }
 
 fn player_movement(
-  time: Res<Time>,
+    time: Res<Time>,
     keyboard: Res<ButtonInput<KeyCode>>,
     mut player_query: Query<(&Player, &mut Transform), With<Player>>,
 ) {
@@ -34,24 +32,23 @@ fn player_movement(
 
     let player_speed = player.speed * 100.0;
 
-
     if keyboard.pressed(KeyCode::KeyW) {
-            player_transform.translation.y +=  player_speed * time.delta_seconds();
+        player_transform.translation.y += player_speed * time.delta_seconds();
     }
 
     if keyboard.pressed(KeyCode::KeyS) {
-            player_transform.translation.y -=  player_speed * time.delta_seconds();
+        player_transform.translation.y -= player_speed * time.delta_seconds();
     }
 
     if keyboard.pressed(KeyCode::KeyA) {
-            player_transform.translation.x -=  player_speed * time.delta_seconds();
+        player_transform.translation.x -= player_speed * time.delta_seconds();
     }
 
     if keyboard.pressed(KeyCode::KeyD) {
-            player_transform.translation.x +=  player_speed * time.delta_seconds();
+        player_transform.translation.x += player_speed * time.delta_seconds();
     }
 
-    info!("{:?}", player_transform.translation);
+    info!("Player Translation: {:?}", player_transform.translation);
 }
 
 fn main() {
