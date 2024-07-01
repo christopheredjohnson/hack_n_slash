@@ -13,22 +13,23 @@ fn setup(
         size: Vec2::new(20.0, 20.0),
         cell_size: Vec2::new(32.0, 32.0),
     });
+
+
     commands.spawn(Camera2dBundle::default());
 
-    let texture = asset_server.load("Dungeon_Character.png");
-    let layout = TextureAtlasLayout::from_grid(Vec2::new(16.0, 16.0), 7, 2, None, None);
+    let player_texture = asset_server.load("Dungeon_Character.png");
+    let player_layout = TextureAtlasLayout::from_grid(Vec2::new(16.0, 16.0), 7, 2, None, None);
 
-    let texture_atlas_layout = texture_atlas_layouts.add(layout);
+    let player_texture_atlas_layout = texture_atlas_layouts.add(player_layout);
 
-    // Use only the subset of sprites in the sheet that make up the run animation
-    let animation_indices = AnimationIndices { first: 1, last: 4 };
+    let player_animation_indices = AnimationIndices { first: 1, last: 4 };
 
     commands.spawn((
         SpriteSheetBundle {
-            texture,
+            texture: player_texture,
             atlas: TextureAtlas {
-                layout: texture_atlas_layout,
-                index: animation_indices.first,
+                layout: player_texture_atlas_layout,
+                index: player_animation_indices.first,
             },
             sprite: Sprite {
                 custom_size: Some(Vec2::splat(32.0)),
@@ -37,11 +38,17 @@ fn setup(
             // transform: Transform::from_scale(Vec3::splat(6.0)),
             ..default()
         },
-        animation_indices,
+        player_animation_indices,
         AnimationTimer(Timer::from_seconds(0.5, TimerMode::Repeating)),
         Player,
     ));
 }
+
+
+fn draw_grid (
+) {
+}
+
 
 fn animate_sprite(
     time: Res<Time>,
@@ -106,7 +113,7 @@ fn main() {
         .insert_resource(LastMoveTime(0.0))
         .add_plugins(DefaultPlugins)
         .add_plugins(WorldInspectorPlugin::new())
-        .add_systems(Startup, setup)
+        .add_systems(Startup, (setup, draw_grid))
         .add_systems(Update, (player_input, snap_to_grid, animate_sprite).chain())
         .run();
 }
