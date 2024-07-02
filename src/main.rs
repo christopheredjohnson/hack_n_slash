@@ -1,16 +1,13 @@
 use bevy::prelude::*;
-mod components;
 
-fn setup(
-    mut commands: Commands
-) {
-}
+const GRID_SIZE: u8 = 20;
+
+
+#[derive(Component)]
+struct Grid;
 
 fn main() {
     App::new()
-        .add_plugins((
-            DefaultPlugins,
-        ))
-        .add_systems(Startup, (setup).chain())
+        .add_plugins(DefaultPlugins)
         .run();
 }
