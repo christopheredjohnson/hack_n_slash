@@ -1,78 +1,118 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{prelude::*, window::WindowResolution};
 
+const TILE_SIZE: f32 = 40.0;
 
-
-#[derive(Component)]
-struct AnimationIndices {
-    first: usize,
-    last: usize,
+#[derive(Component, Debug)]
+struct LevelLocation {
+    x: usize,
+    y: usize,
 }
 
-#[derive(Component, Deref, DerefMut)]
-struct AnimationTimer(Timer);
-
-
-#[derive(Component)]
-struct Player;
-
-fn setup(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-) {
-    let texture = asset_server.load("mHero_.png");
-    let layout = TextureAtlasLayout::from_grid(Vec2::splat(24.0), 8, 6, None, None);
-    let texture_atlas_layout = texture_atlas_layouts.add(layout);
-
-
-    // Use only the subset of sprites in the sheet that make up the idle animation
-    let animation_indices = AnimationIndices { first: 0, last: 3 };
-
-
-
-    commands.spawn(Camera2dBundle::default());
-
-    commands.spawn((
-        SpriteBundle {
-            transform: Transform::from_scale(Vec3::splat(24.0)),
-            texture,
-            ..default()
-        },
-        TextureAtlas {
-            layout: texture_atlas_layout,
-            index: animation_indices.first,
-        },
-        animation_indices,
-        AnimationTimer(Timer::from_seconds(0.125, TimerMode::Repeating)),
-        Player
-    ));
+#[derive(Resource, Clone, Copy)]
+struct Level {
+    width: usize,
+    height: usize,
 }
-
-
-
-fn animate_sprite(
-    time: Res<Time>,
-    mut query: Query<(&AnimationIndices, &mut AnimationTimer, &mut TextureAtlas)>,
-) {
-    for (indices, mut timer, mut atlas) in &mut query {
-        timer.tick(time.delta());
-        if timer.just_finished() {
-            atlas.index = if atlas.index == indices.last {
-                indices.first
-            } else {
-                atlas.index + 1
-            };
-        }
-    }
-}
-
-
-
 
 fn main() {
+    let level = Level {
+        width: 20,
+        height: 20,
+    };
+
     App::new()
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
-        .add_systems(Startup, setup)
-        .add_systems(Update, (animate_sprite).chain())
+        .insert_resource(level)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "Hack N Slash!".to_string(),
+                resolution: WindowResolution::new(
+                    level.width as f32 * TILE_SIZE,
+                    level.height as f32 * TILE_SIZE,
+                ),
+                resizable: false,
+                ..default()
+            }),
+            ..default()
+        }))
+        .add_systems(Startup, intital_setup)
+        .add_systems(Update, (button_system).chain())
         .run();
+}
+
+fn intital_setup(mut commands: Commands, level: Res<Level>) {
+    commands.spawn(Camera2dBundle::default());
+
+    //Button style
+    let button_style = Style {
+        display: Display::Grid,
+        justify_content: JustifyContent::Center,
+        align_items: AlignItems::Center,
+        border: UiRect::all(Val::Px(1.0)),
+        ..default()
+    };
+
+    commands
+        .spawn(NodeBundle {
+            style: Style {
+                //Create a grid layout,
+                display: Display::Grid,
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                grid_template_columns: vec![GridTrack::auto()],
+                //Top Row will take up all the space after the bottom row is complete.
+                grid_template_rows: vec![GridTrack::flex(1.0)],
+                ..default()
+            },
+            background_color: BackgroundColor(Color::WHITE),
+            ..default()
+        })
+        .with_children(|builder| {
+            //Game Area
+            builder
+                .spawn(NodeBundle {
+                    style: Style {
+                        //Create a grid layout,
+                        display: Display::Grid,
+                        width: Val::Percent(100.0),
+                        height: Val::Percent(100.0),
+                        grid_template_columns: vec![GridTrack::auto(); level.width],
+                        grid_template_rows: vec![GridTrack::auto(); level.height],
+                        ..default()
+                    },
+                    background_color: BackgroundColor(Color::WHITE),
+                    ..default()
+                })
+                .with_children(|game_area_builder| {
+                    //         //Every other will be black or white!
+                    for c in 0..level.width {
+                        for r in 0..level.height {
+                            game_area_builder.spawn((
+                                ButtonBundle {
+                                    style: button_style.clone(),
+                                    background_color: BackgroundColor(Color::GREEN),
+                                    border_color: BorderColor(Color::DARK_GREEN),
+                                    ..default()
+                                },
+                                LevelLocation { x: c, y: r },
+                            ));
+                        }
+                    }
+                });
+        });
+}
+
+fn button_system(
+    mut interaction_query: Query<
+        (&Interaction, &LevelLocation),
+        (Changed<Interaction>, With<Button>),
+    >,
+) {
+    for (interaction, grid_loc) in &mut interaction_query {
+        match *interaction {
+            Interaction::Pressed => {
+                info!("{:?}", grid_loc)
+            },
+            Interaction::Hovered | Interaction::None => {}
+        }
+    }
 }
