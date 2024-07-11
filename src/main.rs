@@ -1,33 +1,63 @@
-use bevy::{prelude::*, window::WindowResolution};
+use bevy::{prelude::*, transform, window::WindowResolution};
 
-const TILE_SIZE: f32 = 40.0;
+const TILE_SIZE: f32 = 60.0;
 
 #[derive(Component, Debug)]
-struct LevelLocation {
+struct Player;
+
+#[derive(Component, Debug)]
+struct CurrentLevelLocation {
     x: usize,
     y: usize,
 }
 
-#[derive(Resource, Clone, Copy)]
+#[derive(Component, Debug)]
+struct TileState {
+    selected: bool
+}
+
+#[derive(Resource, Clone)]
 struct Level {
     width: usize,
     height: usize,
+    tiles: Vec<Vec<usize>>,
 }
 
 fn main() {
-    let level = Level {
-        width: 20,
-        height: 20,
+    let mut level = Level {
+        width: 0,
+        height: 0,
+        tiles: vec![
+            vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+            vec![1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+        ],
+    };
+
+    // calculate the height, and width from tiles
+    level.height = level.tiles.len();
+
+    level.width = if level.height > 0 {
+        level.tiles[0].len()
+    } else {
+        0
     };
 
     App::new()
-        .insert_resource(level)
+        .insert_resource(level.clone())
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Hack N Slash!".to_string(),
                 resolution: WindowResolution::new(
-                    level.width as f32 * TILE_SIZE,
-                    level.height as f32 * TILE_SIZE,
+                    (level.width * TILE_SIZE as usize) as f32,
+                    (level.height * TILE_SIZE as usize) as f32,
                 ),
                 resizable: false,
                 ..default()
@@ -35,7 +65,7 @@ fn main() {
             ..default()
         }))
         .add_systems(Startup, intital_setup)
-        .add_systems(Update, (button_system).chain())
+        .add_systems(Update, (button_system, highlight_tiles).chain())
         .run();
 }
 
@@ -83,17 +113,24 @@ fn intital_setup(mut commands: Commands, level: Res<Level>) {
                     ..default()
                 })
                 .with_children(|game_area_builder| {
-                    //         //Every other will be black or white!
+                    game_area_builder.spawn((
+                        SpriteBundle { ..default() },
+                        Player,
+                        CurrentLevelLocation { x: 0, y: 0 },
+                    ));
+                    //Every other will be black or white!
                     for c in 0..level.width {
                         for r in 0..level.height {
                             game_area_builder.spawn((
                                 ButtonBundle {
                                     style: button_style.clone(),
-                                    background_color: BackgroundColor(Color::GREEN),
-                                    border_color: BorderColor(Color::DARK_GREEN),
+                                    border_color: BorderColor(Color::BLACK),
                                     ..default()
                                 },
-                                LevelLocation { x: c, y: r },
+                                CurrentLevelLocation { x: c, y: r },
+                                TileState {
+                                   selected: false
+                                }
                             ));
                         }
                     }
@@ -101,18 +138,51 @@ fn intital_setup(mut commands: Commands, level: Res<Level>) {
         });
 }
 
+
+
+
 fn button_system(
-    mut interaction_query: Query<
-        (&Interaction, &LevelLocation),
+    mut interaction_query:
+        Query<
+        (Entity, &Interaction),
         (Changed<Interaction>, With<Button>),
     >,
+    mut tile_query:  Query<(&mut TileState)>
 ) {
-    for (interaction, grid_loc) in &mut interaction_query {
+
+    
+    for (entity_id, interaction) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
-                info!("{:?}", grid_loc)
-            },
+
+                // clear current selected tiles
+                for mut tile_state in &mut tile_query {
+                    tile_state.selected = false;
+                }
+
+                // select tile
+                if let Ok(mut tile_state) = tile_query.get_mut(entity_id) {
+                    tile_state.selected = true;
+                }
+
+            }
             Interaction::Hovered | Interaction::None => {}
         }
     }
 }
+
+fn highlight_tiles (
+    mut tile_query:  Query<(&TileState, &mut BorderColor)>
+) {
+    for (tile , mut border_color) in &mut tile_query {
+
+        let color = if tile.selected {
+            Color::RED
+        } else {
+            Color::BLACK
+        };
+        
+        *border_color = BorderColor(color);
+    }
+}
+
