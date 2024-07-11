@@ -5,6 +5,8 @@ edition = "2021"
 
 [dependencies]
 bevy="0.13"
+bevy-inspector-egui = "0.24"
+bevy_mod_picking = "0.19"
 
 # Enable max optimizations for dependencies, but not for our code:
 [profile.dev.package."*"]
